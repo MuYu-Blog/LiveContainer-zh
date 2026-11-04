@@ -7,7 +7,7 @@ import Foundation
 import UIKit
 
 final class LCAppBannerRootView: UIView {
-    static let bannerHeight: CGFloat = 88
+    static let bannerHeight: CGFloat = 76
 
     let runControl = LCAppBannerRunControl()
 
@@ -58,13 +58,15 @@ final class LCAppBannerRootView: UIView {
 
         iconImageView.translatesAutoresizingMaskIntoConstraints = false
         iconImageView.contentMode = .scaleAspectFit
-        iconImageView.layer.cornerRadius = 16
+        iconImageView.layer.cornerRadius = 13
         iconImageView.layer.cornerCurve = .continuous
         iconImageView.clipsToBounds = true
         iconImageView.isAccessibilityElement = false
 
-        configureLabel(nameLabel, font: .systemFont(ofSize: 16, weight: .bold))
-        configureLabel(versionLabel, font: .systemFont(ofSize: 12))
+        configureLabel(nameLabel, font: .systemFont(ofSize: 15, weight: .bold))
+        nameLabel.adjustsFontSizeToFitWidth = true
+        nameLabel.minimumScaleFactor = 0.65
+        configureLabel(versionLabel, font: .systemFont(ofSize: 11))
         configureLabel(remarkLabel, font: .systemFont(ofSize: 10))
         configureLabel(containerLabel, font: .systemFont(ofSize: 8))
 
@@ -118,19 +120,19 @@ final class LCAppBannerRootView: UIView {
             visualBackgroundView.topAnchor.constraint(equalTo: topAnchor),
             visualBackgroundView.bottomAnchor.constraint(equalTo: bottomAnchor),
 
-            iconImageView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
+            iconImageView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
             iconImageView.centerYAnchor.constraint(equalTo: centerYAnchor),
-            iconImageView.widthAnchor.constraint(equalToConstant: 60),
-            iconImageView.heightAnchor.constraint(equalToConstant: 60),
+            iconImageView.widthAnchor.constraint(equalToConstant: 48),
+            iconImageView.heightAnchor.constraint(equalToConstant: 48),
 
-            detailStack.leadingAnchor.constraint(equalTo: iconImageView.trailingAnchor, constant: 10),
+            detailStack.leadingAnchor.constraint(equalTo: iconImageView.trailingAnchor, constant: 8),
             detailStack.trailingAnchor.constraint(lessThanOrEqualTo: runControl.leadingAnchor, constant: -10),
             detailStack.centerYAnchor.constraint(equalTo: centerYAnchor),
 
-            runControl.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
+            runControl.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
             runControl.centerYAnchor.constraint(equalTo: centerYAnchor),
-            runControl.widthAnchor.constraint(equalToConstant: 70),
-            runControl.heightAnchor.constraint(equalToConstant: 32)
+            runControl.widthAnchor.constraint(equalToConstant: 62),
+            runControl.heightAnchor.constraint(equalToConstant: 30)
         ])
 
         // 次级按钮链：名字列先让（detailStack 横向抗压本来就是
@@ -143,11 +145,11 @@ final class LCAppBannerRootView: UIView {
             NSLayoutConstraint.activate([
                 minimizeButton.centerYAnchor.constraint(equalTo: centerYAnchor),
                 smallWindowButton.centerYAnchor.constraint(equalTo: centerYAnchor),
-                minimizeButton.heightAnchor.constraint(equalToConstant: 32),
-                smallWindowButton.heightAnchor.constraint(equalToConstant: 32),
-                detailStack.trailingAnchor.constraint(lessThanOrEqualTo: minimizeButton.leadingAnchor, constant: -8),
-                minimizeButton.trailingAnchor.constraint(equalTo: smallWindowButton.leadingAnchor, constant: -8),
-                smallWindowButton.trailingAnchor.constraint(equalTo: runControl.leadingAnchor, constant: -8),
+                minimizeButton.heightAnchor.constraint(equalToConstant: 30),
+                smallWindowButton.heightAnchor.constraint(equalToConstant: 30),
+                detailStack.trailingAnchor.constraint(lessThanOrEqualTo: minimizeButton.leadingAnchor, constant: -6),
+                minimizeButton.trailingAnchor.constraint(equalTo: smallWindowButton.leadingAnchor, constant: -6),
+                smallWindowButton.trailingAnchor.constraint(equalTo: runControl.leadingAnchor, constant: -6),
             ])
         }
     }
@@ -160,10 +162,10 @@ final class LCAppBannerRootView: UIView {
         config.cornerStyle = .capsule
         config.baseBackgroundColor = .systemGray5
         config.baseForegroundColor = .label
-        config.contentInsets = NSDirectionalEdgeInsets(top: 7, leading: 8, bottom: 7, trailing: 8)
+        config.contentInsets = NSDirectionalEdgeInsets(top: 6, leading: 7, bottom: 6, trailing: 7)
         config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
             var outgoing = incoming
-            outgoing.font = .systemFont(ofSize: 13)
+            outgoing.font = .systemFont(ofSize: 12)
             return outgoing
         }
         let button = UIButton(configuration: config)
@@ -383,7 +385,7 @@ final class LCAppBannerRunControl: UIControl {
     private var progress = 0.0
 
     override var intrinsicContentSize: CGSize {
-        CGSize(width: 70, height: 32)
+        CGSize(width: 62, height: 30)
     }
 
     override init(frame: CGRect) {
@@ -404,7 +406,7 @@ final class LCAppBannerRunControl: UIControl {
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.text = "lc.appBanner.run".loc
         titleLabel.textColor = .white
-        titleLabel.font = .systemFont(ofSize: 16, weight: .bold)
+        titleLabel.font = .systemFont(ofSize: 15, weight: .bold)
         titleLabel.textAlignment = .center
         titleLabel.adjustsFontSizeToFitWidth = true
         titleLabel.minimumScaleFactor = 0.1

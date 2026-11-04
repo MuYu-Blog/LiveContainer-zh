@@ -33,7 +33,7 @@ struct LCAppSkeletonBanner: View {
                 .frame(width: 70, height: 32)
         }
         .padding()
-        .frame(height: 88)
+        .frame(height: 76)
         .background(RoundedRectangle(cornerRadius: 22).fill(Color.gray.opacity(0.1)))
     }
     
