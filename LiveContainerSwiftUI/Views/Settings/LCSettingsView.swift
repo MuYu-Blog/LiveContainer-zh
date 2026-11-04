@@ -69,11 +69,6 @@ struct LCSettingsView: View {
     @StateObject private var certificateImportFileAlert = AlertHelper<URL>()
     @StateObject private var certificateImportPasswordAlert = InputHelper()
     
-    @AppStorage("LCFrameShortcutIcons") var frameShortIcon = false
-    @AppStorage("LCSwitchAppWithoutAsking") var silentSwitchApp = false
-    @AppStorage("LCOpenWebPageWithoutAsking") var silentOpenWebPage = false
-    @AppStorage("LCDontSignApp", store: LCUtils.appGroupUserDefault) var dontSignApp = false
-    @AppStorage("LCStrictHiding", store: LCUtils.appGroupUserDefault) var strictHiding = false
     @AppStorage("dynamicColors", store: LCUtils.appGroupUserDefault) var dynamicColors = true
     @AppStorage("darkModeIcon", store: LCUtils.appGroupUserDefault) var darkModeIcon = false
     
@@ -98,90 +93,6 @@ struct LCSettingsView: View {
     // 游客通知以宿主身份发出，系统里 LiveContainer 没授权，
     // 通知就会静默丢掉；这行就是让用户一眼看到授权状态、
     // 点一下补申请或跳系统设置。
-    @State private var notificationAuthStatus: UNAuthorizationStatus = .notDetermined
-    // App 内更新检查（CZF，2026-10-29）：查 fork 自己的 update release
-    // release，对比本机 LCVersionInfo 里的短提交号；有新版不
-    // 自己下载安装（侧载 App 换不了自己的包），而是跳
-    // sideinstaller://install?url=，由 SideInstaller 🅥 下载、
-    // 签名、覆盖安装，SideInstaller 那边还会再弹一次确认。
-    @State private var updateStatusText = "点一下检查"
-    @State private var updateChecking = false
-    @State private var updateInfo: CZFUpdateInfo?
-    private func startUpdateCheck() {
-        guard !updateChecking else { return }
-        updateChecking = true
-        updateStatusText = "检查中…"
-        CZFUpdateCheck.check { result in
-            DispatchQueue.main.async {
-                updateChecking = false
-                switch result {
-                case .failure:
-                    updateInfo = nil
-                    updateStatusText = "检查失败，点一下重试"
-                case .success(let info):
-                    if let current = CZFUpdateCheck.currentCommit(), current == info.commit {
-                        updateInfo = nil
-                        updateStatusText = "已是最新（\(current)）"
-                    } else {
-                        updateInfo = info
-                        var text = "有新版：\(info.commit)"
-                        if let date = info.publishedAt {
-                            let formatter = DateFormatter()
-                            formatter.dateFormat = "yyyy-MM-dd"
-                            text += " · \(formatter.string(from: date))"
-                        }
-                        updateStatusText = text
-                    }
-                }
-            }
-        }
-    }
-    private func openSideInstallerInstall() {
-        guard let info = updateInfo else { return }
-        var components = URLComponents()
-        components.scheme = "sideinstaller"
-        components.host = "install"
-        components.queryItems = [URLQueryItem(name: "url", value: info.downloadURL.absoluteString)]
-        guard let url = components.url else { return }
-        UIApplication.shared.open(url, options: [:]) { success in
-            if !success {
-                errorInfo = "没能打开 SideInstaller 🅥，请确认它已安装"
-                errorShow = true
-            }
-        }
-    }
-    // 去 Seal 更新：照抄 openSideInstallerInstall，只换 scheme。
-    // Seal 注册了 seal 和 sidestore 两个 scheme，用户定用
-    // sidestore://install?url= 这个格式，不要自创 seal://。
-    private func openSealInstall() {
-        guard let info = updateInfo else { return }
-        var components = URLComponents()
-        components.scheme = "sidestore"
-        components.host = "install"
-        components.queryItems = [URLQueryItem(name: "url", value: info.downloadURL.absoluteString)]
-        guard let url = components.url else { return }
-        UIApplication.shared.open(url, options: [:]) { success in
-            if !success {
-                errorInfo = "没能打开 Seal，请确认它已安装"
-                errorShow = true
-            }
-        }
-    }
-    private var notificationAuthText: String {
-        switch notificationAuthStatus {
-        case .authorized: return "已开启"
-        case .denied: return "已关闭"
-        case .notDetermined: return "未申请"
-        case .provisional: return "临时授权"
-        case .ephemeral: return "临时"
-        @unknown default: return "未知"
-        }
-    }
-    private func refreshNotificationAuth() {
-        UNUserNotificationCenter.current().getNotificationSettings { settings in
-            DispatchQueue.main.async { notificationAuthStatus = settings.authorizationStatus }
-        }
-    }
     @AppStorage("LCSharePrivateDataWithLiveProcess") var sharePrivateDataWithLiveProcess = false
     
     @EnvironmentObject private var sharedModel : SharedModel
@@ -488,108 +399,17 @@ struct LCSettingsView: View {
     }
 
     @ViewBuilder private var miscSection: some View {
-        // 杂项区：原来 5 个开关各占一个 Section、每段带一段
-        // footer 说明，竖着占 5 段；并成一段，说明挪到各行
-        // 下面的小字，意思一句不少。“清除通知”原来也单独
-        // 占一段，顺手并进这一段的末尾。严格隐藏那行只在
-        // 隐藏 App 已解锁时出现，原条件不变。
-        Section{
-            Toggle(isOn: $frameShortIcon) {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack {
-                        LCSettingsIcon(systemName: "plus.app", color: .green)
-                        Text("lc.settings.FrameIcon".loc)
-                    }
-                    Text("lc.settings.FrameIconDesc".loc)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            Toggle(isOn: $silentSwitchApp) {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack {
-                        LCSettingsIcon(systemName: "eye.slash", color: .gray)
-                        Text("lc.settings.silentSwitchApp".loc)
-                    }
-                    Text("lc.settings.silentSwitchAppDesc".loc)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            Toggle(isOn: $silentOpenWebPage) {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack {
-                        LCSettingsIcon(systemName: "globe", color: .teal)
-                        Text("lc.settings.silentOpenWebPage".loc)
-                    }
-                    Text("lc.settings.silentOpenWebPageDesc".loc)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            if sharedModel.isHiddenAppUnlocked {
-                Toggle(isOn: $strictHiding) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack {
-                            LCSettingsIcon(systemName: "hand.raised.fill", color: .red)
-                            Text("lc.settings.strictHiding".loc)
-                        }
-                        Text("lc.settings.strictHidingDesc".loc)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            Toggle(isOn: $dontSignApp) {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack {
-                        LCSettingsIcon(systemName: "signature", color: .orange)
-                        Text("lc.settings.dontSign".loc)
-                    }
-                    Text("lc.settings.dontSignDesc".loc)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            Button {
-                clearNotifications()
+        // 杂项已收进「应用设置」子页（LCAppPreferencesView），
+        // 主页只留一行入口，与存储管理同款，带图标不显突兀。
+        Section {
+            NavigationLink {
+                LCAppPreferencesView()
             } label: {
                 HStack {
-                    LCSettingsIcon(systemName: "bell.slash.fill", color: .red)
-                    Text("lc.settings.clearNotifications".loc)
+                    LCSettingsIcon(systemName: "apps.iphone", color: .indigo)
+                    Text("应用设置")
                 }
             }
-            // 通知权限行：状态从系统实时读；未申请点一下
-            // 直接申请，已拒绝点一下跳系统设置，已开启不
-            // 显示按钮。从系统设置回来时刷新一次状态。
-            HStack {
-                LCSettingsIcon(systemName: "bell.fill", color: .orange)
-                Text("通知权限")
-                Spacer()
-                Text(notificationAuthText)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                if notificationAuthStatus != .authorized {
-                    Button(notificationAuthStatus == .denied ? "去设置" : "开启") {
-                        if notificationAuthStatus == .denied {
-                            if let url = URL(string: UIApplication.openSettingsURLString) {
-                                UIApplication.shared.open(url)
-                            }
-                        } else {
-                            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in
-                                refreshNotificationAuth()
-                            }
-                        }
-                    }
-                    .buttonStyle(.borderless)
-                }
-            }
-            .onAppear { refreshNotificationAuth() }
-            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
-                refreshNotificationAuth()
-            }
-        } header: {
-            Text("lc.common.miscellaneous".loc)
         }
     }
 
@@ -663,47 +483,17 @@ struct LCSettingsView: View {
     }
 
     @ViewBuilder private var updateSection: some View {
-        // App 内更新检查：只查 fork 自己的 update release，不查
-        // 上游源（会丢 fork 改动）。有新版时下面多两行
-        // “去 SideInstaller 更新”和“去 Seal 更新”，点它直接跳
-        // 对应 App 的 install 链接下载安装，不用再去聊天里拿直链。
+        // 更新已收进「更新」子页（LCUpdateView），主页只留一行
+        // 入口，与存储管理同款。
         Section {
-            Button {
-                startUpdateCheck()
+            NavigationLink {
+                LCUpdateView()
             } label: {
                 HStack {
                     LCSettingsIcon(systemName: "arrow.down.circle", color: .blue)
-                    Text("检查更新")
-                    Spacer()
-                    Text(updateStatusText)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+                    Text("更新")
                 }
             }
-            .disabled(updateChecking)
-            if updateInfo != nil {
-                Button {
-                    openSideInstallerInstall()
-                } label: {
-                    HStack {
-                        LCSettingsIcon(systemName: "arrow.clockwise.circle", color: .green)
-                        Text("去 SideInstaller 更新")
-                    }
-                }
-                Button {
-                    openSealInstall()
-                } label: {
-                    HStack {
-                        LCSettingsIcon(systemName: "arrow.clockwise.circle", color: .green)
-                        Text("去 Seal 更新")
-                    }
-                }
-                Text("点更新会跳到 SideInstaller 🅥 下载安装，安装时会关闭 LiveContainer，装好后重新打开；更新前建议先在数据管理里备份一次。")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-        } header: {
-            Text("更新")
         }
     }
 
@@ -884,17 +674,6 @@ struct LCSettingsView: View {
     
     func openTwitter() {
         UIApplication.shared.open(URL(string: "https://twitter.com/khanhduytran0")!)
-    }
-
-    func clearNotifications() {
-        let notificationCenter = UNUserNotificationCenter.current()
-        notificationCenter.removeAllDeliveredNotifications()
-        notificationCenter.removeAllPendingNotificationRequests()
-        if #available(iOS 16.0, *) {
-            notificationCenter.setBadgeCount(0)
-        } else {
-            UIApplication.shared.applicationIconBadgeNumber = 0
-        }
     }
 
     func export() {

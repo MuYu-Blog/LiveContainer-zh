@@ -162,52 +162,66 @@ struct LCVPNView: View {
 
     @ViewBuilder private var vpnSection: some View {
         Section {
-            HStack {
-                TextField("粘贴节点链接（vless://…）", text: $vpnNewNodeText)
-                    .textInputAutocapitalization(.never)
-                Button("添加") {
-                    // 重复添加不再静默：addNode 返回 false
-                    // 时提示已存在，输入框留着、不清结果。
-                    if CZFVPNManager.shared.addNode(vpnNewNodeText) {
-                        vpnNewNodeText = ""
-                        vpnPingResults = [:]
-                        refreshVPNState()
-                    } else {
-                        errorInfo = "节点已存在，未重复添加"
-                        errorShow = true
+            VStack(spacing: 8) {
+                HStack {
+                    TextField("粘贴节点链接（vless://…）", text: $vpnNewNodeText)
+                        .textInputAutocapitalization(.never)
+                    Button("添加") {
+                        // 重复添加不再静默：addNode 返回 false
+                        // 时提示已存在，输入框留着、不清结果。
+                        if CZFVPNManager.shared.addNode(vpnNewNodeText) {
+                            vpnNewNodeText = ""
+                            vpnPingResults = [:]
+                            refreshVPNState()
+                        } else {
+                            errorInfo = "节点已存在，未重复添加"
+                            errorShow = true
+                        }
                     }
+                    .disabled(vpnNewNodeText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || vpnPinging || vpnSinglePinging)
+                    .buttonStyle(.bordered)
+                    .buttonBorderShape(.capsule)
+                    .controlSize(.small)
                 }
-                .disabled(vpnNewNodeText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || vpnPinging || vpnSinglePinging)
+                Divider()
             }
-            HStack {
-                TextField("粘贴订阅地址（https://…）", text: $vpnSubURL)
-                    .textInputAutocapitalization(.never)
-                Button(vpnSubBusy ? "拉取中…" : "导入订阅") {
-                    vpnSubBusy = true
-                    CZFVPNManager.fetchSubscriptionLinks(urlString: vpnSubURL) { result in
-                        DispatchQueue.main.async {
-                            vpnSubBusy = false
-                            switch result {
-                            case .success(let links):
-                                // 整体替换是破坏性操作：列表里有
-                                // 手填节点时先确认再替换（原来点
-                                // 一下直接全换，手填的瞬间没了）；
-                                // 列表为空没东西可丢，直接导入
-                                if vpnNodes.isEmpty {
-                                    applySubscriptionLinks(links)
-                                } else {
-                                    pendingSubLinks = links
-                                    showSubReplaceConfirm = true
+            .listRowSeparator(.hidden)
+            VStack(spacing: 8) {
+                HStack {
+                    TextField("粘贴订阅地址（https://…）", text: $vpnSubURL)
+                        .textInputAutocapitalization(.never)
+                    Button(vpnSubBusy ? "拉取中…" : "导入订阅") {
+                        vpnSubBusy = true
+                        CZFVPNManager.fetchSubscriptionLinks(urlString: vpnSubURL) { result in
+                            DispatchQueue.main.async {
+                                vpnSubBusy = false
+                                switch result {
+                                case .success(let links):
+                                    // 整体替换是破坏性操作：列表里有
+                                    // 手填节点时先确认再替换（原来点
+                                    // 一下直接全换，手填的瞬间没了）；
+                                    // 列表为空没东西可丢，直接导入
+                                    if vpnNodes.isEmpty {
+                                        applySubscriptionLinks(links)
+                                    } else {
+                                        pendingSubLinks = links
+                                        showSubReplaceConfirm = true
+                                    }
+                                case .failure(let error):
+                                    errorInfo = error.localizedDescription
+                                    errorShow = true
                                 }
-                            case .failure(let error):
-                                errorInfo = error.localizedDescription
-                                errorShow = true
                             }
                         }
                     }
+                    .disabled(vpnSubBusy || vpnSubURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || vpnPinging || vpnSinglePinging)
+                    .buttonStyle(.bordered)
+                    .buttonBorderShape(.capsule)
+                    .controlSize(.small)
                 }
-                .disabled(vpnSubBusy || vpnSubURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || vpnPinging || vpnSinglePinging)
+                Divider()
             }
+            .listRowSeparator(.hidden)
             ForEach(Array(vpnNodes.enumerated()), id: \.offset) { index, link in
                 Button {
                     if vpnNodeSelecting {
@@ -326,16 +340,18 @@ struct LCVPNView: View {
                 // 本身又不切核心，测速中起停没有意义，
                 // 测完再点。
                 .disabled(vpnPinging || vpnSinglePinging)
-                .buttonStyle(.borderless)
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.capsule)
+                .controlSize(.small)
+                .tint(vpnCoreRunning ? .red : .blue)
                 Button(vpnPinging ? (vpnPingTotal > 0 ? "\(vpnPingPhase) \(vpnPingDone)/\(vpnPingTotal)" : "测速中…") : "测延迟") {
                     startVPNPing()
                 }
                 .disabled(vpnPinging || vpnSinglePinging || vpnNodes.isEmpty)
-                .buttonStyle(.borderless)
+                .buttonStyle(.bordered)
+                .buttonBorderShape(.capsule)
+                .controlSize(.small)
                 Spacer()
-                Text(vpnCoreRunning ? "核心运行中" : (vpnStatusMessage ?? "核心未启动"))
-                    .font(.footnote)
-                    .foregroundStyle(.gray)
             }
             .onAppear {
                 refreshVPNState()

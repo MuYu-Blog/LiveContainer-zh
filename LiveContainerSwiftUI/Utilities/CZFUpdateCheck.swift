@@ -13,8 +13,8 @@ struct CZFUpdateInfo {
 }
 
 enum CZFUpdateCheck {
-    private static let apiURL = URL(string: "https://api.github.com/repos/wozofa-ship-it/LiveContainer-zh/releases/tags/update")!
-    private static let fallbackIPAURL = URL(string: "https://github.com/wozofa-ship-it/LiveContainer-zh/releases/download/update/LiveContainer.ipa")!
+    private static let apiURL = URL(string: "https://api.github.com/repos/MuYu-Blog/LiveContainer-zh/releases/tags/update")!
+    private static let fallbackIPAURL = URL(string: "https://github.com/MuYu-Blog/LiveContainer-zh/releases/download/update/LiveContainer.ipa")!
 
     /// 本机短提交号：包里 LCVersionInfo 是 "Release (main/25c5124)"
     /// 这种格式，构建时的 Run Script 写进去的；解析不到就返回 nil。
