@@ -312,6 +312,7 @@ extension NSNotification {
 public enum LCTabIdentifier: Hashable {
     case sources
     case apps
+    case vpn
     case tweaks
     case settings
 }

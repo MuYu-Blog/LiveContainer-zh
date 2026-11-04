@@ -39,6 +39,13 @@ struct LCTabView: View {
                 }
                 .tag(LCTabIdentifier.apps)
             if DataManager.shared.model.multiLCStatus != 2 {
+                LCVPNView()
+                    .tabItem {
+                        Label("VPN", systemImage: "network")
+                    }
+                    .tag(LCTabIdentifier.vpn)
+            }
+            if DataManager.shared.model.multiLCStatus != 2 {
                 LCTweaksView()
                     .tabItem{
                         Label("lc.tabView.tweaks".loc, systemImage: "wrench.and.screwdriver")
